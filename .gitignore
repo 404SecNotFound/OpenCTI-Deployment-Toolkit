@@ -1,0 +1,7 @@
+*.bak
+.env
+*-credentials.txt
+opencti-credentials*
+private_key.pem
+*.pem
+.DS_Store

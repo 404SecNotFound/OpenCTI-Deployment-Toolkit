@@ -1,0 +1,15 @@
+  connector-mitre-atlas:
+    image: opencti/connector-mitre-atlas:latest
+    environment:
+      - OPENCTI_URL=http://opencti:8080
+      - OPENCTI_TOKEN=__OPENCTI_TOKEN__
+      - CONNECTOR_ID=__UUID__
+      - CONNECTOR_NAME=MITRE ATLAS
+      - CONNECTOR_SCOPE=identity,attack-pattern,course-of-action,relationship,x-mitre-collection,x-mitre-matrix,x-mitre-tactic
+      - CONNECTOR_LOG_LEVEL=info
+      - CONNECTOR_DURATION_PERIOD=P7D
+      - MITRE_ATLAS_URL=https://raw.githubusercontent.com/mitre-atlas/atlas-navigator-data/main/dist/stix-atlas.json
+    restart: always
+    depends_on:
+      opencti:
+        condition: service_healthy
