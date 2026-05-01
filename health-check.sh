@@ -33,7 +33,7 @@ ENV_FILE="$OPENCTI_DIR/.env"
 COMPOSE_FILE="$OPENCTI_DIR/docker-compose.yml"
 MAX_RESTARTS=3
 EXPECTED_WORKERS=3   # matches install-opencti.sh 'standard' profile
-STALL_MINUTES=60     # connector flagged as stuck if message count flat this long
+STALL_MINUTES=240
 STALL_GRACE_MINUTES=15  # don't flag a fresh connector that hasn't started yet
 
 ###############################################################################
