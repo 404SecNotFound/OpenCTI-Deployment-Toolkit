@@ -1,0 +1,17 @@
+  connector-disarm-framework:
+    image: opencti/connector-disarm-framework:latest
+    environment:
+      - OPENCTI_URL=http://opencti:8080
+      - OPENCTI_TOKEN=__OPENCTI_TOKEN__
+      - CONNECTOR_ID=__UUID__
+      - CONNECTOR_TYPE=EXTERNAL_IMPORT
+      - CONNECTOR_NAME=DISARM Framework
+      - CONNECTOR_SCOPE=identity,attack-pattern,course-of-action,intrusion-set,x-mitre-tactic
+      - CONNECTOR_LOG_LEVEL=info
+      - CONNECTOR_RUN_AND_TERMINATE=false
+      - DISARM_FRAMEWORK_URL=https://raw.githubusercontent.com/DISARMFoundation/DISARMframeworks/main/generated_pages/DISARM_STIX/disarm-bundle.json
+      - DISARM_FRAMEWORK_INTERVAL=7
+    restart: always
+    depends_on:
+      opencti:
+        condition: service_healthy
