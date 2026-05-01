@@ -1,0 +1,20 @@
+  connector-abuseipdb-ipblacklist:
+    image: opencti/connector-abuseipdb-ipblacklist:latest
+    environment:
+      - OPENCTI_URL=http://opencti:8080
+      - OPENCTI_TOKEN=__OPENCTI_TOKEN__
+      - CONNECTOR_ID=__UUID__
+      - CONNECTOR_NAME=AbuseIPDB IP Blacklist
+      - CONNECTOR_SCOPE=abuseipdb
+      - CONNECTOR_LOG_LEVEL=info
+      - CONNECTOR_DURATION_PERIOD=PT12H
+      - ABUSEIPDB_API_KEY=__API_KEY__
+      - ABUSEIPDB_SCORE=75
+      - ABUSEIPDB_LIMIT=10000
+      - ABUSEIPDB_CREATE_INDICATOR=true
+      - ABUSEIPDB_TLP_LEVEL=clear
+      - ABUSEIPDB_IPVERSION=mixed
+    restart: always
+    depends_on:
+      opencti:
+        condition: service_healthy
