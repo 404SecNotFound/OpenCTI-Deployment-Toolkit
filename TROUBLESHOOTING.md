@@ -596,3 +596,59 @@ After working through the above, if you're still stuck:
 3. Check [OpenCTI's own issue tracker](https://github.com/OpenCTI-Platform/opencti/issues)
 
 For toolkit-specific bugs, the GitHub Issues here is the right venue. For OpenCTI platform bugs, escalate upstream.
+
+---
+
+## Recovery after host reboot
+
+If you rebooted the VM and the stack is broken, work through these in order.
+
+### RabbitMQ container "Up" but unhealthy, things keep restarting
+
+**Diagnose:**
+```bash
+sudo docker exec opencti-rabbitmq-1 rabbitmqctl status 2>&1 | head -5
+```
+
+If it returns "requires the 'rabbit' app to be running" - mnesia is wedged.
+
+**Fix (loses in-flight queue state only, no ingested data):**
+```bash
+cd /opt/opencti
+sudo docker compose down
+sudo docker volume rm opencti_amqpdata
+sudo docker compose up -d
+```
+
+Wait 5 minutes. Then:
+```bash
+sudo docker compose ps
+```
+
+All containers should be `Up` or `(healthy)`.
+
+### "volume is in use" when trying to remove a volume
+
+**Cause:** `docker compose stop` doesn't fully disconnect volume references. Use `down` instead.
+
+```bash
+sudo docker compose down       # not stop
+sudo docker volume rm opencti_amqpdata
+sudo docker compose up -d
+```
+
+### Many connectors stuck in `Restarting` after reboot
+
+**Cause:** Connectors have `depends_on: opencti: service_healthy` or `rabbitmq: service_healthy` - they restart until their dependencies are healthy.
+
+**Fix:** Just wait. Platform takes 3-5 min to pass first healthcheck. Once it's healthy, connectors recover automatically over the next 2-3 min. If they're still flapping after 10 min, check individual connector logs.
+
+### Prevention - always shut down cleanly
+
+```bash
+cd /opt/opencti
+sudo docker compose down
+sudo reboot
+```
+
+Hard reboots without `compose down` first are the #1 cause of mnesia corruption.

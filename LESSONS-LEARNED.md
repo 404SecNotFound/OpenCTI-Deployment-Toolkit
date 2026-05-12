@@ -47,3 +47,26 @@ The `/health` endpoint and container `Status: healthy` are necessary but NOT suf
 - ATLAS (AI/ML threat matrix) is separate from ATT&CK - both are useful, run both.
 - Built-in connectors in upstream compose include `connector-mitre`. Don't add a second MITRE ATT&CK connector via templates - they conflict.
 - The Connector Catalog (UI deployment of connectors) requires Enterprise Edition. Free 30-day trial available, free NFR licenses for individual researchers and charities.
+
+## Recovery issues
+
+| Issue | Cause | Fix |
+|---|---|---|
+| RabbitMQ container "Up" but `rabbit` app refuses to start after hard reboot | Mnesia (RabbitMQ's internal DB) corrupts during unclean shutdown. `rabbitmqctl status` returns "requires the 'rabbit' app to be running" | Full reset: `docker compose down` → `docker volume rm opencti_amqpdata` → `docker compose up -d`. Loses in-flight queue state but no ingested data (that's in Elasticsearch). Connectors rebuild queues automatically |
+| `docker volume rm` fails with "volume is in use" | `docker compose stop` leaves some references on the volume | Use `docker compose down` (not `stop`) before removing volumes. `down` properly disconnects volumes |
+| OpenCTI platform stuck in restart loop after RabbitMQ recovery | Platform has `depends_on: rabbitmq: service_healthy` and waits for RabbitMQ to pass healthcheck (~2 min) before booting | Patience - platform recovers automatically once RabbitMQ is healthy. Allow 5-10 min total |
+| `health-check.sh` triggers false-positive restarts on long-cycle connectors after recovery | `OpenCTI Datasets` and similar connectors run on weekly schedules. With `STALL_MINUTES=240`, any cycle > 4hr trips the check | Bump `STALL_MINUTES` higher (1440 = 24hr) for typical labs, or whitelist specific long-cycle connectors |
+
+## Prevention patterns
+
+**Always shut down OpenCTI cleanly before rebooting the host:**
+
+```bash
+cd /opt/opencti
+sudo docker compose down
+sudo reboot
+```
+
+`docker compose down` gives RabbitMQ time to flush mnesia and exit cleanly. Hard reboots without this step are the #1 cause of post-reboot recovery pain.
+
+If you need to power-cycle a wedged VM (host-side issue, hung kernel, etc), expect the recovery procedure above on next boot.
