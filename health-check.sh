@@ -33,7 +33,7 @@ ENV_FILE="$OPENCTI_DIR/.env"
 COMPOSE_FILE="$OPENCTI_DIR/docker-compose.yml"
 MAX_RESTARTS=3
 EXPECTED_WORKERS=3   # matches install-opencti.sh 'standard' profile
-STALL_MINUTES=240
+STALL_MINUTES=1440
 STALL_GRACE_MINUTES=15  # don't flag a fresh connector that hasn't started yet
 
 ###############################################################################
@@ -306,6 +306,14 @@ check_connector_ingestion() {
   local svc="$1"
   local now display_name latest_work latest_epoch
   now=$(date +%s)
+
+  # Skip stall check for known long-cycle connectors (intervals > 24hr)
+  case "$svc" in
+    connector-opencti|connector-threatfox|connector-mitre|connector-mitre-atlas)
+      log "$svc: skipping stall check (long-cycle connector)"
+      return 0
+      ;;
+  esac
 
   display_name=$(get_display_name "$svc")
   if [[ -z "$display_name" ]]; then
