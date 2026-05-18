@@ -70,3 +70,25 @@ sudo reboot
 `docker compose down` gives RabbitMQ time to flush mnesia and exit cleanly. Hard reboots without this step are the #1 cause of post-reboot recovery pain.
 
 If you need to power-cycle a wedged VM (host-side issue, hung kernel, etc), expect the recovery procedure above on next boot.
+
+## v1.0.3 - Long-cycle connector false positives
+
+`health-check.sh` originally used a single global `STALL_MINUTES` threshold. This breaks for connectors with intervals longer than the threshold - they get flagged "stalled" on every check and restarted unnecessarily.
+
+Examples of long-cycle connectors:
+- **OpenCTI Datasets** - weekly interval (~10080 min)
+- **ThreatFox** - 3-day interval (~4320 min)
+- **MITRE ATT&CK** - weekly
+- **MITRE ATLAS** - weekly
+
+Fix: whitelist these by service name in `check_connector_ingestion()`. They skip the stall check entirely. Their containers still get checked for state (running/exited) - only the GraphQL ingestion stall check is bypassed.
+
+For a more sophisticated fix, query each connector's own `next_run_datetime` from GraphQL and use that as a per-connector dynamic threshold. Left for a future enhancement.
+
+**Diagnostic** to verify a "stalled" connector is actually just waiting on its interval:
+
+```bash
+sudo docker compose -f /opt/opencti/docker-compose.yml logs --tail=5 connector-<name> | grep "next run"
+```
+
+If the connector logs say `Connector will not run, next run in: X days` - it's healthy, just dormant.
